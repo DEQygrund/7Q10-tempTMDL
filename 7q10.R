@@ -1,260 +1,176 @@
+# devtools::install_github('DEQrmichie/dflowR', host = 'https://api.github.com', dependencies= TRUE, force = TRUE, upgrade='never')
+library(dflowR)
 library(dplyr)
+library(leaflet)
 
-sf::sf_use_s2(F) # GEOS regime as a baseline
+# data.sharedrive <- "//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/model_QAPPs/R/data/"
+# 
+# # Project area ----
+# ## Not include Willamette MS ----
+# pro_areas <- sf::st_read(dsn = paste0(data.sharedrive,"gis/project_areas.shp"),layer = "project_areas") %>% sf::st_transform(4326)
+# ## Willamette MS ----
+# willamette_huc12 <- sf::read_sf(dsn = "//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/GIS/willa_snake/TempTMDL_QAPP_Reaches_data_query_HUC12s.shp",
+#                                 layer = "TempTMDL_QAPP_Reaches_data_query_HUC12s") %>% 
+#   dplyr::filter(Project_Na == "Willamette River Mainstem and Major Tributaries") %>% 
+#   sf::st_transform(4326)
+# willamette_huc12_union <- sf::st_union(willamette_huc12)
+# 
+# # Lookup HUCs ----
+# # Include Willamette MS
+# lookup.huc <- readxl::read_xlsx(paste0(data.sharedrive, "Lookup_QAPPProjectArea.xlsx"), sheet = "Lookup_QAPPProjectArea") %>%
+#   dplyr::mutate(HUC_6 = as.character(HUC_6),
+#                 HUC_8 = as.character(HUC_8),
+#                 HUC10 = as.character(HUC10),
+#                 HUC12 = as.character(HUC12))
+# 
+# # IR 2020-2022 CAT 4&5 ----
+# cat.45.rivers <- sf::st_read(dsn = "./data/gis/2020-2022_IR_Cat45_Temperature_Rivers_project_areas.shp",
+#                              layer = "2020-2022_IR_Cat45_Temperature_Rivers_project_areas") %>% sf::st_zm() %>% sf::st_transform(4326) %>%
+#   dplyr::select(-c(AU_WBType, AU_UseCode, AQWMS_NUM, AQWMS_TXT, wqstd_code, AU_delist, Rationale, previous_r, year_asses, recordID, action_ID, action_TMD, TMDL_Prior
+# )) %>%
+#   dplyr::rename(AU_Description = AU_Descrip,
+#                 AU_parameter_category = AU_paramet,
+#                 assessed_2022 = assessed_2,
+#                 Year_listed = Year_liste,
+#                 TMDL_Project = TMDL_Proje,
+#                 QAPP_Project_Area = QAPP_Proje)
+# 
+# leaflet::leaflet() %>%
+#   leaflet::addPolygons(data = pro_areas) %>%
+#   leaflet::addPolylines(data = cat.45.rivers)
+# 
+# # AWQMS station database ----
+# ## See AWQMSdata_fix.R to install AWQMSdata package
+# library(AWQMSdata)
+# huc8 <- lookup.huc %>% dplyr::select(HUC_8) %>% dplyr::distinct() %>% dplyr::pull()
+# awqms.stations <- AWQMSdata::query_stations(state="OR",stations_odbc="STATIONS", huc8=huc8)
+# save(awqms.stations, file=paste0("./data/awqms_stations.RData")) # download date: 6/15/2022
+# 
+# # USGS stations and data ----
+# # install.packages("dataRetrieval")
+# library(dataRetrieval)
+# ## Github: https://github.com/USGS-R/dataRetrieval
+# ## Stations:
+# ### OR stations:
+# usgs.fl.stations.or <- dataRetrieval::whatNWISdata(stateCd="OR", parameterCd = "00060") # 00060	= Discharge [ft3/s]
+# ### WA stations for Willamette Mainstem QAPP: 
+# usgs.fl.stations.wa <- dataRetrieval::whatNWISdata(stateCd="WA", parameterCd = "00060")
+# usgs.fl.stations.wa.will <- usgs.fl.stations.wa %>% 
+#   dplyr::mutate(lat = dec_lat_va,
+#                 long = dec_long_va) %>%
+#   sf::st_as_sf(coords = c("long", "lat"), crs = sf::st_crs("+init=EPSG:4326"))
+# st_as_s2(FALSE)
+# usgs.fl.stations.wa.will <- sf::st_intersection(usgs.fl.stations.wa.will,willamette_huc12_union) %>% 
+#   sf::st_drop_geometry()
+# usgs.fl.stations <- rbind(usgs.fl.stations.or,usgs.fl.stations.wa.will)
+# ## Data:
+# usgs.fl.data <- NULL
+# for (id in unique(sort(usgs.fl.stations$site_no))) {
+#   print(id)
+#   usgs.fl.data.i <- dataRetrieval::readNWISdata(siteNumber = id,
+#                                                 parameterCd = "00060",    # and statCd = "00003" for daily mean which is default
+#                                                 startDate = "1878-06-01", # min(usgs.fl.stations$begin_date)
+#                                                 endDate = "2022-06-14")   # max(usgs.fl.stations$end_date)
+#   usgs.fl.data <- dplyr::bind_rows(usgs.fl.data,usgs.fl.data.i)
+# }
+# save(usgs.fl.stations,usgs.fl.data, file=paste0("./data/usgs_flow.RData")) # download date: 6/15/2022
+# 
+# au.usgs.stations <- usgs.fl.stations %>% 
+#   dplyr::left_join(awqms.stations,by=c("site_no"="MLocID")) %>% # Add AU ID to the USGS station table
+#   dplyr::left_join(cat.45.rivers,by="AU_ID") %>% # Join IR 2020-2022 CAT 4&5
+#   dplyr::filter(HUC8 %in% huc8) # Filter HUC within the project areas
+# 
+# writexl::write_xlsx(au.usgs.stations,"./data/au_usgs_stations.xlsx")
+# writexl::write_xlsx(usgs.fl.stations,"./data/usgs_fl_stations.xlsx")
+# 
+# save(data.sharedrive,
+#      pro_areas,
+#      willamette_huc12,
+#      willamette_huc12_union,
+#      lookup.huc,
+#      cat.45.rivers,
+#      huc8,
+#      awqms.stations,
+#      usgs.fl.stations.or,
+#      usgs.fl.stations.wa,
+#      usgs.fl.stations.wa.will,
+#      usgs.fl.stations,
+#      usgs.fl.data,
+#      au.usgs.stations,
+#      file = "data.RData")
+load("data.RData")
 
-# map title
-tag.map.title <- htmltools::tags$style(htmltools::HTML("
-  .leaflet-control.map-title { 
-    transform: translate(-50%,20%);
-    position: fixed !important;
-    left: 40%;
-    text-align: left;
-    padding-left: 10px; 
-    padding-right: 10px; 
-    background: rgba(255,255,255,0.75);
-    font-weight: bold;
-    font-size: 28px;
-  }
-"))
+# Sandy Subbasin ----
+project_area <- "Sandy Subbasin"
 
-data.dir <- "//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/model_QAPPs/R/data/"
+# __ Sandy AUs ----
+cat.45.rivers.pro.area <- sf::st_intersection(cat.45.rivers,pro_areas[which(pro_areas$Project_Na == project_area),]$geometry) %>% 
+  dplyr::distinct(AU_ID, .keep_all = TRUE)
 
-# Project area ----
-pro_areas <- sf::st_read(dsn = paste0(data.dir,"gis/project_areas.shp"),layer = "project_areas") %>% sf::st_transform(4326)
-## lookup HUCs ----
-lookup.huc <- readxl::read_xlsx(paste0(data.dir, "Lookup_QAPPProjectArea.xlsx"), sheet = "Lookup_QAPPProjectArea") %>% 
-  dplyr::mutate(HUC_6 = as.character(HUC_6),
-                HUC_8 = as.character(HUC_8),
-                HUC10 = as.character(HUC10),
-                HUC12 = as.character(HUC12))
+# __ Sandy USGS stations ----
+au.usgs.stations.pro.area <- au.usgs.stations %>% 
+  dplyr::filter(QAPP_Project_Area == project_area) %>% 
+  dplyr::distinct(site_no, .keep_all = TRUE) %>% 
+  dplyr::select(AU_ID,GNIS_Name,agency_cd,site_no,station_nm,dec_lat_va,dec_long_va,begin_date,end_date) 
 
-# IR2018/20 Cat 4 & 5 ----
-cat.45.rivers <- sf::st_read(dsn = "//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/GIS/2018_2020_IR_Cat4_5_Temp_Rivers_FINAL.shp",
-                             layer = "2018_2020_IR_Cat4_5_Temp_Rivers_FINAL") %>% sf::st_zm() %>% sf::st_transform(4326)
-cat.45.waterbodies <- sf::st_read(dsn = "//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/GIS/2018_2020_IR_Cat4_5_Temp_Waterbodies_FINAL.shp",
-                                  layer = "2018_2020_IR_Cat4_5_Temp_Waterbodies_FINAL") %>% sf::st_zm() %>% sf::st_transform(4326)
-cat.45.watershed <- sf::st_read(dsn = "//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/GIS/2018_2020_IR_Cat4_5_Temp_Watershed_FINAL.shp",
-                                layer = "2018_2020_IR_Cat4_5_Temp_Watershed_FINAL") %>% 
-  dplyr::mutate(AU_Name = gsub(pattern = "HUC12 Name: ","",AU_Name)) %>% 
-  dplyr::mutate(AU_Name = paste0(AU_Name, " Watershed")) %>% 
-  sf::st_zm() %>% sf::st_transform(4326)
-
-colum_auid <- sf::st_read(dsn = "//deqhq1/TMDL/Planning statewide/2020_2024",
-                          layer="Columbia_River_AU_IDs",
-                          stringsAsFactors=FALSE) %>% 
-  sf::st_drop_geometry() %>%
-  dplyr::pull(AU_ID) 
-
-cat.45 <- rbind(cat.45.rivers[,c("IR_categor","AU_Name","AU_ID","Year_liste","Period","HUC12")]#,
-                # cat.45.waterbodies[,c("IR_categor","AU_Name","AU_ID","Year_liste","Period","HUC12")],
-                # cat.45.watershed[,c("IR_categor","AU_Name","AU_ID","Year_liste","Period","HUC12")]
-                ) %>% 
-  dplyr::left_join(lookup.huc, by = "HUC12") %>% 
-  dplyr::filter(!AU_ID %in% c(colum_auid)) %>% 
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Cre\\*", "Creek") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "For\\*", "Fork Willamette River") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Joh\\*", "John Day River") %>% 
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "John\\*", "John Day River") %>% 
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "McKenzie \\*", "McKenzie River") %>% 
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Mill\\*", "Mill Creek") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "R\\*", "River") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Ri\\*", "River") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Riv\\*", "River") %>% 
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Thunder Creek-North Unpqua River", "Thunder Creek-North Umpqua River")  %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "W\\*", "Willamette River") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Willamet\\*", "Willamette River") %>%
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Willamett\\*", "Willamette River") %>% 
-  dplyr::mutate_at("AU_Name", stringr::str_replace_all, "Willamette \\*", "Willamette River")
-
-# USGS flow data ----
-load(paste0(data.dir,"/download/usgs_fl.RData")) # usgs.fl.stations & usgs.fl.data
-usgs.flow.stations <- usgs.fl.stations %>% # Discharge [ft3/s]
-  dplyr::filter(site_no %in% usgs.fl.data$site_no) %>% # filter out the stations that have data beyond the period of 1990-2020
-  dplyr::filter(!(site_tp_cd %in% c("SP","GW"))) %>% # ST = Stream
-  dplyr::filter(data_type_cd %in% c("dv", "id", "iv")) %>% # dv=daily values; id=historical instantaneous values; iv=instantaneous values
+# __ map ----
+au.usgs.stations.pro.area.shp <- au.usgs.stations.pro.area %>% 
   dplyr::mutate(lat = dec_lat_va,
                 long = dec_long_va) %>%
   sf::st_as_sf(coords = c("long", "lat"), crs = sf::st_crs("+init=EPSG:4326"))
 
-# Clip to project areas ----
-cat45_stations_join_table <- NULL
+pal <- leaflet::colorFactor(palette = 'Set1',domain = au.usgs.stations.pro.area.shp$AU_ID)
 
-for(i in 1:nrow(pro_areas)){
-  
-  # test: i=1
-  
-  print(paste0(pro_areas$Project_Na[i],"......"))
-  
-  cat.45_i <- sf::st_intersection(cat.45,pro_areas$geometry[i], sparse = FALSE) %>% 
-    dplyr::filter(QAPP_Project_Area == pro_areas[i,]$Project_Na) %>% 
-    dplyr::distinct(AU_ID, .keep_all = TRUE)
-  
-  cat.45_i_buffer <- sf::st_buffer(cat.45_i,0.02)
-  
-  usgs.flow.stations_i <- sf::st_intersection(usgs.flow.stations,pro_areas$geometry[i], sparse = FALSE)
-  
-  cat45_stations_join_i <- sf::st_join(cat.45_i_buffer,usgs.flow.stations_i)
-  
-  # Save the shapefile ----
-  sf::st_write(cat45_stations_join_i,paste0("./maps/map_7Q10_",pro_areas$Project_Na[i],".shp"),update = TRUE)
-  
-  # generate the table ----
-  cat45_stations_join_i_table <- sf::st_drop_geometry(cat45_stations_join_i)
-  
-  cat45_stations_join_table <- rbind(cat45_stations_join_table,cat45_stations_join_i_table)
-  
-  usgs.flow.stations_i_intersects <- usgs.flow.stations_i %>% 
-    dplyr::filter(site_no %in% cat45_stations_join_i$site_no)
-  
-  usgs.flow.stations_i_notUse <- usgs.flow.stations_i %>% 
-    dplyr::filter(!site_no %in% cat45_stations_join_i$site_no)
-  
-  # maps ----
-  map.title <- htmltools::tags$div(tag.map.title, htmltools::HTML(paste0(pro_areas$Project_Na[i])))
-  map_i <- leaflet::leaflet() %>% 
-    leaflet::addControl(map.title, position = "topleft", className="map-title") %>% 
-    leaflet::addMiniMap(tiles = providers$OpenStreetMap,
-                        position = "bottomright",
-                        width = 200,
-                        height = 150,
-                        zoomLevelFixed = 5,
-                        toggleDisplay = TRUE,
-                        minimized = TRUE) %>% 
-    leaflet.extras::addResetMapButton() %>% 
-    leaflet::addMapPane("OpenStreetMap", zIndex = -2000) %>% 
-    leaflet::addMapPane("area", zIndex = -1000) %>%
-    leaflet::addMapPane("ir", zIndex = -40) %>%
-    leaflet::addMapPane("stations", zIndex = 100) %>%
-    leaflet::addProviderTiles(providers$OpenStreetMap, #names(providers) to see a list of the layers
-                              options = pathOptions(pane = "OpenStreetMap")) %>% 
-    # __ Project area outline ----
-  leaflet::addPolygons(data = pro_areas$geometry[i],
-                       options = leaflet::leafletOptions(pane="area"),
-                       fillColor = "transparent",
-                       fillOpacity = 0,
-                       weight = 3,
-                       color = "black",
-                       opacity = 1) %>% 
-    # __ IR Cat45 streams ----
-   leaflet::addPolylines(data = cat.45_i,
-                         group = "2018/2020 303(d) Temperature Listed - Streams",
-                         options = leaflet::leafletOptions(pane="ir"),
-                         label = ~`AU_Name`,
-                         labelOptions = labelOptions(style = list("color" = "blue",
-                                                                  "font-size" = "20px")),
-                         color = "blue",
-                         opacity = 1,
-                         weight = 2,
-                         fill=FALSE) %>% 
-    # __ IR Cat45 streams buffer ----
-  leaflet::addPolylines(data = cat.45_i_buffer,
-                        group = "2018/2020 303(d) Temperature Listed - Streams (buffer)",
-                        options = leaflet::leafletOptions(pane="ir"),
-                        label = ~`AU_Name`,
-                        labelOptions = labelOptions(style = list("color" = "red",
-                                                                 "font-size" = "20px")),
-                        color = "red",
-                        opacity = 1,
-                        weight = 2,
-                        fill=FALSE) %>% 
-    # __ USGS flow stations intersect with Cat45 stream AUs ----
-  leaflet::addMarkers(data = usgs.flow.stations_i_intersects,
-                      group = "USGS flow stations intersect with Cat45 stream AUs",
-                      options = leaflet::leafletOptions(pane="stations"),
-                      label = ~`site_no`) %>% 
-    # __ USGS flow stations don't intersect with Cat45 stream AUs ----
-  leaflet::addMarkers(data = usgs.flow.stations_i_notUse,
-                      group = "USGS flow stations don't intersect with Cat45 stream AUs",
-                      options = leaflet::leafletOptions(pane="stations"),
-                      label = ~`site_no`) %>% 
-    # Layer control ----
-    leaflet::addLayersControl(overlayGroups = c("2018/2020 303(d) Temperature Listed - Streams",
-                                                "2018/2020 303(d) Temperature Listed - Streams (buffer)",
-                                                "USGS flow stations intersect with Cat45 stream AUs",
-                                                "USGS flow stations don't intersect with Cat45 stream AUs"),
-                              options = leaflet::layersControlOptions(collapsed = FALSE, autoZIndex = TRUE)) %>% 
-    leaflet::hideGroup(c("2018/2020 303(d) Temperature Listed - Streams (buffer)",
-                         "USGS flow stations intersect with Cat45 stream AUs",
-                         "USGS flow stations don't intersect with Cat45 stream AUs"))
-  
-  # Save the map ----
-  print(paste0(pro_areas$Project_Na[i],"...Save the map"))
-  htmlwidgets::saveWidget(map_i,paste0("map_7Q10_",i,".html"),selfcontained = TRUE) #selfcontained needs to be in the current working directory
-  file.rename(paste0("map_7Q10_",i,".html"), paste0("./maps/map_7Q10_",pro_areas$Project_Na[i],".html"))
-  
+leaflet::leaflet() %>%
+  leaflet::addProviderTiles(providers$OpenStreetMap) %>% 
+  leaflet::addPolygons(data = pro_areas[which(pro_areas$Project_Na == project_area),]$geometry,fillColor = "transparent") %>%
+  leaflet::addPolylines(data = cat.45.rivers.pro.area, color = ~pal(AU_ID)) %>% 
+  leaflet::addMarkers(data = au.usgs.stations.pro.area.shp)
+
+# __ Sandy result table ----
+tbl.pro.area <- cat.45.rivers.pro.area %>% 
+  sf::st_drop_geometry() %>% 
+  dplyr::left_join(au.usgs.stations.pro.area,by="AU_ID") %>% 
+  dplyr::select(QAPP_Project_Area,AU_ID,AU_Name,AU_parameter_category,GNIS_Name,agency_cd,site_no,station_nm,dec_lat_va,dec_long_va,begin_date,end_date) %>% 
+  dplyr::mutate(`7Q10_cfs` = NA)
+
+writexl::write_xlsx(tbl.pro.area,"./data/tbl_pro_area.xlsx")
+
+# __ Sandy USGS station data ----
+usgs.station.flow.data <- usgs.fl.data %>% 
+  dplyr::filter(site_no %in% sort(unique(tbl.pro.area$site_no))) %>% 
+  dplyr::filter(!is.na(site_no)) %>% 
+  dplyr::mutate(POSIXct_date = as.Date(dateTime),
+                daily_mean_flow = as.numeric(X_00060_00003)) %>% 
+  dplyr::select(POSIXct_date,daily_mean_flow,site_no,agency_cd)
+
+# __ Flow Chart ----
+# for(site_no in sort(unique(usgs.station.flow.data$site_no))){
+#   # test: site_no <- "14130000"
+#   flow_chart <- ggplot2::ggplot(data = usgs.station.flow.data[which(usgs.station.flow.data$site_no == site_no),],
+#                                 ggplot2::aes(x = as.Date(dateTime), y = X_00060_00003)) +
+#     ggplot2::geom_point() +
+#     ggplot2::ggtitle(paste0("USGS Station ID:",
+#                             usgs.station.flow.data[which(usgs.station.flow.data$site_no == site_no),]$site_no,
+#                             "\n Data Start Date:",min(as.Date(usgs.station.flow.data[which(usgs.station.flow.data$site_no == site_no),]$dateTime)),
+#                             "\n Data End Date:",max(as.Date(usgs.station.flow.data[which(usgs.station.flow.data$site_no == site_no),]$dateTime)))) +
+#     ggplot2::xlab("Date") +
+#     ggplot2::ylab("Discharge, cubic feet per second")
+# }
+
+# __ 7Q10 ----
+for(site_no in sort(unique(usgs.station.flow.data$site_no))){
+  # test: site_no <- "14130000"
+  print(site_no)
+  first_column <- usgs.station.flow.data[which(usgs.station.flow.data$site_no == site_no),]$POSIXct_date
+  second_column <- usgs.station.flow.data[which(usgs.station.flow.data$site_no == site_no),]$daily_mean_flow
+  x <- data.frame(first_column, second_column)
+  m <- 7
+  r <- 10
+  `7Q10_cfs` <- dflowR::dflow(x,m,r)
+  tbl.pro.area[which(tbl.pro.area$site_no == site_no),]$`7Q10_cfs` <- `7Q10_cfs`
 }
 
-# Save the table ----
-write.csv(cat45_stations_join_table, file = "./data/cat45_stations_join_table.csv")
+writexl::write_xlsx(tbl.pro.area,"./data/tbl_pro_area.xlsx")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# _ Flow data ----
-## _ (1) USGS ----
-station.usgs.flow <- usgs.flow.stations %>%  # Discharge [ft3/s]
-  dplyr::filter(!(site_tp_cd %in% c("SP","GW"))) %>% # ST = Stream
-  dplyr::filter(data_type_cd %in% c("dv", "id", "iv")) %>% # dv=daily values; id=historical instantaneous values; iv=instantaneous values
-  dplyr::mutate(lat = dec_lat_va,
-                long = dec_long_va) %>%
-  sf::st_as_sf(coords = c("long", "lat"), crs = sf::st_crs("+init=EPSG:4269")) #%>%
-
-station.usgs.flow <- sf::st_intersection(station.usgs.flow,pro_area_huc12_union, sparse = FALSE)
-station.usgs.flow <- station.usgs.flow %>% sf::st_drop_geometry() %>% 
-  dplyr::filter(!is.na(dec_lat_va)) %>% 
-  dplyr::filter(!site_no %in% station.owrd$`Station ID`) %>% 
-  dplyr::distinct(site_no,.keep_all=TRUE)
-
-## In the 3 Willamette subbasin QAPPs, filter out the reachcodes covered in the Willamette mainstem QAPP
-if(qapp_project_area %in% c("Lower Willamette and Clackamas Subbasins",
-                            "Middle Willamette Subbasins",
-                            "Southern Willamette Subbasins")) {
-  
-  station.usgs.flow <- station.usgs.flow %>% 
-    dplyr::left_join(df.stations[,c("MLocID","Reachcode")], by = c("site_no" = "MLocID")) %>% 
-    dplyr::filter(!Reachcode %in% will_reachcodes) 
-  
-} 
-
-## In the Malheur and Grande Ronde QAPPs, filter out the reachcodes covered in the Willamette mainstem QAPP
-if(qapp_project_area %in% c("Lower Grande Ronde, Imnaha, and Wallowa Subbasins",
-                            "Malheur River Subbasins")) {
-  
-  station.usgs.flow <- station.usgs.flow %>% 
-    dplyr::left_join(df.stations[,c("MLocID","Reachcode")], by = c("site_no" = "MLocID")) %>% 
-    dplyr::filter(!Reachcode %in% will_reachcodes)
-  
-}
-
-station.usgs.flow <- station.usgs.flow %>% 
-  dplyr::select(`Data Source` = agency_cd, 
-                `Station ID` = site_no, 
-                `Station` = station_nm, 
-                `Lat` = dec_lat_va, 
-                `Long` = dec_long_va)
-
-usgs.data.flow <- usgs.fl.data %>% 
-  dplyr::filter(site_no %in% station.usgs.flow$`Station ID`) %>% 
-  dplyr::select(`Data Source` = agency_cd,
-                `Station ID` = site_no,
-                dateTime,
-                Result = X_00060_00003)
+save.image()
