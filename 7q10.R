@@ -30,42 +30,37 @@ colum_auid <- sf::st_read(dsn = "//deqhq1/TMDL/Planning statewide/2020_2024",
   sf::st_drop_geometry() %>%
   dplyr::pull(AU_ID)
 
-cat.45.rivers <- sf::st_read(dsn = "./data/gis/2020-2022_IR_Cat45_Temperature_Rivers_project_areas.shp",
+cat.45.rivers <- sf::st_read(dsn = "T:/Temperature_TMDL_Revisions/7Q10/GIS/IR2020-2022/2020-2022_IR_Cat45_Temperature_Rivers_project_areas.shp",
                              layer = "2020-2022_IR_Cat45_Temperature_Rivers_project_areas") %>% sf::st_zm() %>% sf::st_transform(4326) %>%
-  dplyr::select(-c(AU_WBType, AU_UseCode, AQWMS_NUM, AQWMS_TXT, Shape_Leng, wqstd_code, AU_delist, Rationale, previous_r, year_asses, recordID, action_ID, action_TMD, TMDL_Prior)) %>%
+  dplyr::select(-c(AU_WBType, AU_UseCode, AU_LenMile, AU_AreaAcr, AQWMS_NUM, AQWMS_TXT, Shape_Leng, wqstd_code, action_ID, action_TMD, TMDL_Prior)) %>%
   dplyr::rename(AU_Description = AU_Descrip,
                 AU_parameter_category = AU_paramet,
-                assessed_2022 = assessed_2,
-                Year_listed = Year_liste,
                 TMDL_Project = TMDL_Proje,
-                QAPP_Project_Area = QAPP_Proje) %>%
+                QAPP_Project_Area = QAPP_Proje,
+                `Period_(Year_Listed)` = Period__Ye) %>%
   dplyr::filter(!AU_ID %in% colum_auid)
 
-cat.45.waterbodies <- sf::st_read(dsn = "./data/gis/2020-2022_IR_Cat45_Temperature_Waterbodies_project_areas.shp",
+cat.45.waterbodies <- sf::st_read(dsn = "T:/Temperature_TMDL_Revisions/7Q10/GIS/IR2020-2022/2020-2022_IR_Cat45_Temperature_Waterbodies_project_areas.shp",
                                   layer = "2020-2022_IR_Cat45_Temperature_Waterbodies_project_areas") %>% sf::st_zm() %>% sf::st_transform(4326) %>%
-  dplyr::select(-c(AU_WBType, AU_UseCode, HUC12,AQWMS_NUM, AQWMS_TXT, Shape_Leng, Shape_Area, wqstd_code, AU_delist, Rationale, previous_r, year_asses, recordID, action_ID, action_TMD, TMDL_Prior)) %>%
-  dplyr::select(-c(OBJECTID,AU_ID_1,AU_Name_1,AU_Descr_1,DO_Class,ObjectID_1,HUC_67,HUC_89,HUC8_NAME,HUC10,HUC10_NAME,HUC12_1,HUC12_Name,HUC12_Name,Adjusted,ObjectID_2)) %>%
+  dplyr::select(-c(AU_WBType, AU_UseCode, AU_LenMile, AU_AreaAcr, AQWMS_NUM, AQWMS_TXT, Shape_Leng, Shape_Area, wqstd_code, action_ID, action_TMD, TMDL_Prior)) %>%
   dplyr::rename(AU_Description = AU_Descrip,
                 AU_parameter_category = AU_paramet,
-                assessed_2022 = assessed_2,
-                Year_listed = Year_liste,
                 TMDL_Project = TMDL_Proje,
-                QAPP_Project_Area = QAPP_Proje) %>%
+                QAPP_Project_Area = QAPP_Proje,
+                `Period_(Year_Listed)` = Period__Ye) %>%
   dplyr::filter(!AU_ID %in% colum_auid)
 
-cat.45.watershed <- sf::st_read(dsn = "./data/gis/2020-2022_IR_Cat45_Temperature_watershed_project_areas.shp",
+cat.45.watershed <- sf::st_read(dsn = "T:/Temperature_TMDL_Revisions/7Q10/GIS/IR2020-2022/2020-2022_IR_Cat45_Temperature_watershed_project_areas.shp",
                                 layer = "2020-2022_IR_Cat45_Temperature_watershed_project_areas") %>% sf::st_zm() %>% sf::st_transform(4326) %>%
-  dplyr::select(-c(AU_WBType, AU_UseCode, HUC12,AQWMS_NUM, AQWMS_TXT, Shape_Leng, Shape_Area, wqstd_code, AU_delist, Rationale, previous_r, year_asses, recordID, action_ID, action_TMD, TMDL_Prior)) %>%
-  dplyr::select(-c(OBJECTID,AU_ID_1,AU_Name_1,AU_Descr_1,DO_Class,ObjectID_1,HUC_67,HUC_89,HUC8_NAME,HUC10,HUC10_NAME,HUC12_1,HUC12_Name,HUC12_Name,Adjusted,ObjectID_2)) %>%
+  dplyr::select(-c(AU_WBType, AU_UseCode, AU_LenMile, AU_AreaAcr, AQWMS_NUM, AQWMS_TXT, Shape_Leng, Shape_Area, wqstd_code, action_ID, action_TMD, TMDL_Prior)) %>%
   dplyr::rename(AU_Description = AU_Descrip,
                 AU_parameter_category = AU_paramet,
-                assessed_2022 = assessed_2,
-                Year_listed = Year_liste,
                 TMDL_Project = TMDL_Proje,
-                QAPP_Project_Area = QAPP_Proje) %>%
+                QAPP_Project_Area = QAPP_Proje,
+                `Period_(Year_Listed)` = Period__Ye) %>%
   dplyr::filter(!AU_ID %in% colum_auid)
 
-cat.45.watershed.gnis <- sf::st_read(dsn = "./data/gis/2020-2022_IR_Cat45_Temperature_Watershed_GNIS_project_area.shp",
+cat.45.watershed.gnis <- sf::st_read(dsn = "T:/Temperature_TMDL_Revisions/7Q10/GIS/IR2020-2022/2020-2022_IR_Cat45_Temperature_Watershed_GNIS_project_area.shp",
                                      layer = "2020-2022_IR_Cat45_Temperature_Watershed_GNIS_project_area") %>% sf::st_zm() %>% sf::st_transform(4326) %>%
   dplyr::rename(QAPP_Project_Area = QAPP_Proje,
                 AU_GNIS_Name = AU_GNIS_Na)
@@ -77,6 +72,9 @@ cat.45.willamette <- cat.45 %>% dplyr::filter(QAPP_Project_Area == "Willamette R
 # leaflet::leaflet() %>%
 #   leaflet::addPolygons(data = pro_areas) %>%
 #   leaflet::addPolylines(data = cat.45.watershed.gnis)
+
+# NPDES ----
+npdes.ind <- readxl::read_xlsx("//deqhq1/TMDL/Planning statewide/Temperature_TMDL_Revisions/model_QAPPs/R/data/NPDES_Master_list.xlsx", sheet = "Individual_NDPES")
 
 # AWQMS station database ----
 ## See AWQMSdata_fix.R to install AWQMSdata package
@@ -120,10 +118,10 @@ save(usgs.flow.stations,usgs.flow.data, file=paste0("./data/usgs_flow.RData")) #
 au.usgs.stations <- usgs.flow.stations %>%
   dplyr::left_join(awqms.stations,by=c("site_no"="MLocID")) %>% # Add AU ID to the USGS station table
   dplyr::left_join(cat.45,by="AU_ID") %>% # Join IR 2020-2022 CAT 4&5, which add QAPP_project_areas to the USGS station table
-  dplyr::filter(HUC8 %in% huc8) # Filter HUC within the project areas
+  dplyr::filter(AU_ID %in% cat.45$AU_ID) # Filter to only include Cat 45 AUs
 
-writexl::write_xlsx(au.usgs.stations,"./data/au_usgs_stations.xlsx")
-writexl::write_xlsx(usgs.flow.stations,"./data/usgs_fl_stations.xlsx")
+writexl::write_xlsx(list("au_usgs_stations" = au.usgs.stations), path = "./data/au_usgs_stations.xlsx") # list() defines the sheet name
+writexl::write_xlsx(list("usgs_fl_stations" = usgs.flow.stations), path = "./data/usgs_fl_stations.xlsx")
 
 # OWRD stations and data ----
 devtools::source_gist("https://gist.github.com/DEQrmichie/835c7c8b3f373ed80e4b9e34c656951d")
@@ -155,11 +153,11 @@ au.owrd.stations <- owrd.stations.or %>%
   dplyr::mutate(station_nbr = as.character(station_nbr)) %>%
   dplyr::left_join(awqms.stations,by=c("station_nbr"="MLocID")) %>% # Add AU ID to the OWRD station table
   dplyr::left_join(cat.45,by="AU_ID") %>% # Join IR 2020-2022 CAT 4&5, which add QAPP_project_areas to the OWRD station table
-  dplyr::filter(HUC8.x %in% huc8) %>% # Filter HUC within the project areas
+  dplyr::filter(AU_ID %in% cat.45$AU_ID) %>% # Filter to only include Cat 45 AUs
   dplyr::filter(!station_nbr %in% usgs.flow.stations$site_no) # Filter out USGS stations
 
-writexl::write_xlsx(au.owrd.stations,"./data/au_owrd_stations.xlsx")
-writexl::write_xlsx(owrd.stations.or,"./data/owrd_fl_stations.xlsx")
+writexl::write_xlsx(list("au_owrd_stations" = au.owrd.stations),path = "./data/au_owrd_stations.xlsx")
+writexl::write_xlsx(list("owrd_fl_stations" = owrd.stations.or), path = "./data/owrd_fl_stations.xlsx")
 
 save(data.sharedrive,
      pro_areas,
@@ -190,20 +188,6 @@ save(data.sharedrive,
 
 load("data.RData")
 
-tag.map.title <- htmltools::tags$style(htmltools::HTML("
-  .leaflet-control.map-title { 
-    transform: translate(-50%,20%);
-    position: fixed !important;
-    left: 40%;
-    text-align: left;
-    padding-left: 10px; 
-    padding-right: 10px; 
-    background: rgba(255,255,255,0.75);
-    font-weight: bold;
-    font-size: 28px;
-  }
-"))
-
 # Each project area ----
 ## for test:
 # project_area = "John Day River Basin"
@@ -221,6 +205,20 @@ tag.map.title <- htmltools::tags$style(htmltools::HTML("
 # project_area = "Willow Creek Subbasin"
 # project_area = "Willow Creek Subbasin"
 # project_area = "Willamette River Mainstem and Major Tributaries"
+
+tag.map.title <- htmltools::tags$style(htmltools::HTML("
+  .leaflet-control.map-title { 
+    transform: translate(-50%,20%);
+    position: fixed !important;
+    left: 40%;
+    text-align: left;
+    padding-left: 10px; 
+    padding-right: 10px; 
+    background: rgba(255,255,255,0.75);
+    font-weight: bold;
+    font-size: 28px;
+  }
+"))
 
 for(project_area in pro_areas$Project_Na){
   
@@ -525,3 +523,33 @@ pt$writeToExcelWorksheet(wb=wb, wsName="Data",
 saveWorkbook(wb, file=paste0("./data/tbl_counts.xlsx"), overwrite = TRUE)
 
 
+# Task: add periods to the shapefiles ----
+tbl.ir.45 <- readxl::read_xlsx("./data/IR2022_OR_Temperature_Cat45.xlsx", sheet = "IR2022_OR_Temperature_Cat45")
+tbl.ir.45.au.periods <- tbl.ir.45 %>% 
+  dplyr::mutate(`Period_(Year_Listed)` = paste0(period," (",Year_listed,")")) %>% 
+  dplyr::group_by(AU_ID) %>% 
+  dplyr::summarise(`Period_(Year_Listed)` = toString(unique(sort(`Period_(Year_Listed)`)))) %>% 
+  dplyr::ungroup()
+writexl::write_xlsx(tbl.ir.45.au.periods,"./data/tbl_ir_45_au_periods.xlsx")
+
+# Task: NPDES 7Q10 at USGS stations ----
+library(dataRetrieval)
+library(dplyr)
+
+siteNumber <- "14133500" 
+siteInfo <- dataRetrieval::whatNWISdata(siteNumber = siteNumber, parameterCd = "00060")
+siteFlowData <- dataRetrieval::readNWISdata(sites = siteNumber,
+                                            parameterCd = "00060", # and statCd = "00003" for daily mean which is default
+                                            startDate = as.Date("1800-01-01"),
+                                            endDate = as.Date("2022-07-01")) %>% 
+  dplyr::mutate(POSIXct_date = as.Date(dateTime),
+                daily_mean_flow = as.numeric(X_00060_00003))
+range(siteFlowData$dateTime)
+lubridate::year(max(siteFlowData$dateTime))-lubridate::year(min(siteFlowData$dateTime))
+first_column <- siteFlowData[which(siteFlowData$site_no == siteNumber),]$POSIXct_date
+second_column <- siteFlowData[which(siteFlowData$site_no == siteNumber),]$daily_mean_flow
+x <- data.frame(first_column, second_column)
+m <- 7
+r <- 10
+`7Q10_cfs` <- dflowR::dflow(x,m,r)
+`7Q10_cfs`
